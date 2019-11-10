@@ -11,3 +11,7 @@
 # System Files
 .DS_Store
 Thumbs.db
+
+# Project
+/api
+/coverage.txt
