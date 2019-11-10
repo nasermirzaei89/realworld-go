@@ -15,13 +15,21 @@ func main() {
 	articleRepo := inmem.NewArticleRepository()
 
 	// handler
-	h := handlers.NewHandler(userRepo, articleRepo)
+	h := handlers.NewHandler(userRepo, articleRepo, secret())
 
 	// serve
 	err := http.ListenAndServe(addr(), h)
 	if err != nil {
 		log.Fatalln(fmt.Errorf("error on listen and serve http: %w", err))
 	}
+}
+
+func secret() []byte {
+	if env, ok := os.LookupEnv("SECRET"); ok {
+		return []byte(env)
+	}
+
+	return []byte("secret")
 }
 
 func addr() string {

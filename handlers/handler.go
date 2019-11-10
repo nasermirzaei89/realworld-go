@@ -15,6 +15,7 @@ type handler struct {
 	userRepo    models.UserRepository
 	articleRepo models.ArticleRepository
 	routes      []route
+	secret      []byte
 }
 
 type route struct {
@@ -23,10 +24,11 @@ type route struct {
 	HandlerFunc http.HandlerFunc
 }
 
-func NewHandler(userRepo models.UserRepository, articleRepo models.ArticleRepository) Handler {
+func NewHandler(userRepo models.UserRepository, articleRepo models.ArticleRepository, secret []byte) Handler {
 	h := handler{
 		userRepo:    userRepo,
 		articleRepo: articleRepo,
+		secret:      secret,
 	}
 
 	h.registerRoutes()
