@@ -18,8 +18,8 @@ type UserRepository interface {
 	GetByEmail(email string) (res *User, err error)
 	GetByUsername(username string) (res *User, err error)
 	GetByID(id int) (res *User, err error)
-	Add(user User) error
-	UpdateByID(id int, user User) (err error)
+	Add(entity User) error
+	UpdateByID(id int, entity User) (err error)
 	ListByFollowedBy(userID int) (res []User, err error)
 }
 

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 )
 
 // Header is json web token header
@@ -22,24 +21,8 @@ type Payload map[string]interface{}
 
 // Token interface
 type Token interface {
-	SetIssuer(iss string)
-	GetIssuer() (string, error)
 	SetSubject(sub string)
 	GetSubject() (string, error)
-	SetAudience(aud ...string)
-	GetAudience() ([]string, error)
-	SetExpirationTime(exp time.Time)
-	GetExpirationTime() (time.Time, error)
-	SetNotBefore(nbf time.Time)
-	GetNotBefore() (time.Time, error)
-	SetIssuedAt(iat time.Time)
-	GetIssuedAt() (time.Time, error)
-	SetJWTID(jti string)
-	GetJWTID() (string, error)
-	Set(key string, value interface{})
-	Get(key string) (interface{}, error)
-	GetPayload() Payload
-	Validate() error
 }
 
 // Algorithm type
@@ -52,22 +35,14 @@ const (
 
 // Registered Claim Names
 const (
-	ClaimIssuer         = "iss"
-	ClaimSubject        = "sub"
-	ClaimAudience       = "aud"
-	ClaimExpirationTime = "exp"
-	ClaimNotBefore      = "nbf"
-	ClaimIssuedAt       = "iat"
-	ClaimJWTID          = "jti"
+	ClaimSubject = "sub"
 )
 
 var (
-	ErrClaimNotFound            = errors.New("claim not found")
-	ErrInvalidClaimType         = errors.New("invalid claim type")
-	ErrTokenExpired             = errors.New("token expired")
-	ErrTokenShouldNotBeAccepted = errors.New("token should not be accepted for processing yet")
-	ErrInvalidTokenSignature    = errors.New("invalid token signature")
-	ErrUnsupportedAlgorithm     = errors.New("unsupported algorithm")
+	ErrClaimNotFound         = errors.New("claim not found")
+	ErrInvalidClaimType      = errors.New("invalid claim type")
+	ErrInvalidTokenSignature = errors.New("invalid token signature")
+	ErrUnsupportedAlgorithm  = errors.New("unsupported algorithm")
 )
 
 type token struct {
@@ -75,34 +50,8 @@ type token struct {
 	payload Payload
 }
 
-func (t *token) GetHeader() Header {
-	return t.header
-}
-
-func (t *token) GetPayload() Payload {
-	return t.payload
-}
-
-func (t *token) SetIssuer(iss string) {
-	t.Set(ClaimIssuer, iss)
-}
-
-func (t *token) GetIssuer() (string, error) {
-	value, ok := t.payload[ClaimIssuer]
-	if !ok {
-		return "", ErrClaimNotFound
-	}
-
-	iss, ok := value.(string)
-	if !ok {
-		return "", ErrInvalidClaimType
-	}
-
-	return iss, nil
-}
-
 func (t *token) SetSubject(sub string) {
-	t.Set(ClaimSubject, sub)
+	t.payload[ClaimSubject] = sub
 }
 
 func (t *token) GetSubject() (string, error) {
@@ -119,136 +68,11 @@ func (t *token) GetSubject() (string, error) {
 	return sub, nil
 }
 
-func (t *token) SetAudience(aud ...string) {
-	t.Set(ClaimAudience, aud)
-}
-
-func (t *token) GetAudience() ([]string, error) {
-	value, ok := t.payload[ClaimAudience]
-	if !ok {
-		return nil, ErrClaimNotFound
-	}
-
-	auds, ok := value.([]string)
-	if !ok {
-		aud, ok := value.(string)
-		if !ok {
-			return nil, ErrInvalidClaimType
-		}
-
-		return []string{aud}, nil
-	}
-
-	return auds, nil
-}
-
-func (t *token) SetExpirationTime(exp time.Time) {
-	t.Set(ClaimExpirationTime, exp.Unix())
-}
-
-func (t *token) GetExpirationTime() (time.Time, error) {
-	value, ok := t.payload[ClaimExpirationTime]
-	if !ok {
-		return time.Time{}, ErrClaimNotFound
-	}
-
-	exp, ok := value.(int64)
-	if !ok {
-		return time.Time{}, ErrInvalidClaimType
-	}
-
-	return time.Unix(exp, 0), nil
-}
-
-func (t *token) SetNotBefore(nbf time.Time) {
-	t.Set(ClaimNotBefore, nbf.Unix())
-}
-
-func (t *token) GetNotBefore() (time.Time, error) {
-	value, ok := t.payload[ClaimNotBefore]
-	if !ok {
-		return time.Time{}, ErrClaimNotFound
-	}
-
-	nbf, ok := value.(int64)
-	if !ok {
-		return time.Time{}, ErrInvalidClaimType
-	}
-
-	return time.Unix(nbf, 0), nil
-}
-
-func (t *token) SetIssuedAt(iat time.Time) {
-	t.Set(ClaimIssuedAt, iat.Unix())
-}
-
-func (t *token) GetIssuedAt() (time.Time, error) {
-	value, ok := t.payload[ClaimIssuedAt]
-	if !ok {
-		return time.Time{}, ErrClaimNotFound
-	}
-
-	iat, ok := value.(int64)
-	if !ok {
-		return time.Time{}, ErrInvalidClaimType
-	}
-
-	return time.Unix(iat, 0), nil
-}
-
-func (t *token) SetJWTID(jti string) {
-	t.Set(ClaimJWTID, jti)
-}
-
-func (t *token) GetJWTID() (string, error) {
-	value, ok := t.payload[ClaimJWTID]
-	if !ok {
-		return "", ErrClaimNotFound
-	}
-
-	jti, ok := value.(string)
-	if !ok {
-		return "", ErrInvalidClaimType
-	}
-
-	return jti, nil
-}
-
-func (t *token) Set(key string, value interface{}) {
-	t.payload[key] = value
-}
-
-func (t *token) Get(key string) (interface{}, error) {
-	value, ok := t.payload[key]
-	if !ok {
-		return nil, ErrClaimNotFound
-	}
-	return value, nil
-}
-
-func (t *token) Validate() error {
-	exp, err := t.GetExpirationTime()
-	if err == nil {
-		if exp.Before(time.Now()) {
-			return ErrTokenExpired
-		}
-	}
-
-	nbf, err := t.GetNotBefore()
-	if err == nil {
-		if nbf.After(time.Now()) {
-			return ErrTokenShouldNotBeAccepted
-		}
-	}
-
-	return nil
-}
-
 // New returns new json web token
-func New(alg Algorithm) Token {
+func New() Token {
 	return &token{
 		header: Header{
-			Algorithm: alg,
+			Algorithm: HS256,
 			Type:      "JWT",
 		},
 		payload: map[string]interface{}{},

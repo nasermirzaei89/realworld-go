@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/nasermirzaei89/realworld-go/libs/jwt"
 	"github.com/nasermirzaei89/realworld-go/models"
 	"net/http"
 	"strconv"
@@ -42,8 +43,6 @@ func (h *handler) handleAuthentication() http.HandlerFunc {
 			return
 		}
 
-		// TODO: validate email
-
 		// find user by email
 		user, err := h.userRepo.GetByEmail(req.Email)
 		if err != nil {
@@ -66,22 +65,6 @@ func (h *handler) handleAuthentication() http.HandlerFunc {
 			_ = json.NewEncoder(w).Encode(ErrorResponse{
 				Errors: map[string]interface{}{
 					"message": "invalid password received",
-				},
-			})
-			return
-		}
-
-		// generate token
-		token := "" // FIXME
-		user.Token = token
-		err = h.userRepo.UpdateByID(user.ID, *user)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
-			w.WriteHeader(http.StatusUnauthorized)
-			_ = json.NewEncoder(w).Encode(ErrorResponse{
-				Errors: map[string]interface{}{
-					"message": "update user failed",
-					"error":   err.Error(),
 				},
 			})
 			return
@@ -178,14 +161,28 @@ func (h *handler) handleRegistration() http.HandlerFunc {
 			return
 		}
 
-		// generate token
-		token := "" // FIXME
+		// generate token with no expiration
+		userID := h.userRepo.NewID()
+		token := jwt.New()
+		token.SetSubject(strconv.Itoa(userID))
+		tokenStr, err := jwt.Sign(token, h.secret)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(ErrorResponse{
+				Errors: map[string]interface{}{
+					"message": "error on sign jwt token",
+					"error":   err.Error(),
+				},
+			})
+			return
+		}
 
 		// create user
 		user := models.User{
-			ID:        h.userRepo.NewID(),
+			ID:        userID,
 			Email:     req.Email,
-			Token:     token,
+			Token:     tokenStr,
 			Username:  req.Username,
 			Password:  req.Password, // TODO: should hash password
 			Bio:       "",
@@ -363,6 +360,12 @@ func (h *handler) handleGetProfile() http.HandlerFunc {
 	type Response ProfileResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// get current user if exists
+		var currentUser *models.User
+		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+			currentUser = iCurrentUser.(*models.User)
+		}
+
 		// get user by username
 		user, err := h.userRepo.GetByUsername(r.Context().Value("username").(string))
 		if err != nil {
@@ -389,6 +392,13 @@ func (h *handler) handleGetProfile() http.HandlerFunc {
 			return
 		}
 
+		following := false
+		if currentUser != nil {
+			if f, ok := user.Followers[currentUser.ID]; f && ok {
+				following = true
+			}
+		}
+
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -397,7 +407,7 @@ func (h *handler) handleGetProfile() http.HandlerFunc {
 				Username:  user.Username,
 				Bio:       user.Bio,
 				Image:     user.Image,
-				Following: false, // TODO
+				Following: following,
 			},
 		})
 	}
@@ -533,6 +543,12 @@ func (h *handler) handleListArticles() http.HandlerFunc {
 	type Response MultipleArticlesResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// get current user if exists
+		var currentUser *models.User
+		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+			currentUser = iCurrentUser.(*models.User)
+		}
+
 		query := r.URL.Query()
 
 		var (
@@ -547,11 +563,57 @@ func (h *handler) handleListArticles() http.HandlerFunc {
 				case "tag":
 					filters = append(filters, models.FilterArticlesByTag(v))
 				case "author":
-					user := models.User{} // TODO: get user
-					filters = append(filters, models.FilterArticlesByAuthor(user))
+					user, err := h.userRepo.GetByUsername(v)
+					if err != nil {
+						if errors.As(err, &models.UserByUsernameNotFoundError{}) {
+							w.Header().Set("Content-Type", "application/json; charset=utf-8")
+							w.WriteHeader(http.StatusNotFound)
+							_ = json.NewEncoder(w).Encode(ErrorResponse{
+								Errors: map[string]interface{}{
+									"message": "user not found",
+									"error":   err.Error(),
+								},
+							})
+							return
+						}
+
+						w.Header().Set("Content-Type", "application/json; charset=utf-8")
+						w.WriteHeader(http.StatusInternalServerError)
+						_ = json.NewEncoder(w).Encode(ErrorResponse{
+							Errors: map[string]interface{}{
+								"message": "get user by username failed",
+								"error":   err.Error(),
+							},
+						})
+						return
+					}
+					filters = append(filters, models.FilterArticlesByAuthor(*user))
 				case "favorited":
-					user := models.User{} // TODO: get user
-					filters = append(filters, models.FilterArticlesByFavorite(user))
+					user, err := h.userRepo.GetByUsername(v)
+					if err != nil {
+						if errors.As(err, &models.UserByUsernameNotFoundError{}) {
+							w.Header().Set("Content-Type", "application/json; charset=utf-8")
+							w.WriteHeader(http.StatusNotFound)
+							_ = json.NewEncoder(w).Encode(ErrorResponse{
+								Errors: map[string]interface{}{
+									"message": "user not found",
+									"error":   err.Error(),
+								},
+							})
+							return
+						}
+
+						w.Header().Set("Content-Type", "application/json; charset=utf-8")
+						w.WriteHeader(http.StatusInternalServerError)
+						_ = json.NewEncoder(w).Encode(ErrorResponse{
+							Errors: map[string]interface{}{
+								"message": "get user by username failed",
+								"error":   err.Error(),
+							},
+						})
+						return
+					}
+					filters = append(filters, models.FilterArticlesByFavorite(*user))
 				case "offset":
 					var err error
 					offset, err = strconv.Atoi(v)
@@ -600,7 +662,65 @@ func (h *handler) handleListArticles() http.HandlerFunc {
 		}
 
 		articles := make([]Article, len(res))
-		// TODO: fill articles
+
+		for i := range res {
+			favorited := false
+			if currentUser != nil {
+				if f, ok := res[i].Favorites[currentUser.ID]; f && ok {
+					favorited = true
+				}
+			}
+
+			user, err := h.userRepo.GetByID(res[i].AuthorID)
+			if err != nil {
+				if errors.As(err, &models.UserByIDNotFoundError{}) {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					w.WriteHeader(http.StatusNotFound)
+					_ = json.NewEncoder(w).Encode(ErrorResponse{
+						Errors: map[string]interface{}{
+							"message": "user not found",
+							"error":   err.Error(),
+						},
+					})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(ErrorResponse{
+					Errors: map[string]interface{}{
+						"message": "get user by id failed",
+						"error":   err.Error(),
+					},
+				})
+				return
+			}
+
+			following := false
+			if currentUser != nil {
+				if f, ok := user.Followers[currentUser.ID]; f && ok {
+					following = true
+				}
+			}
+
+			articles[i] = Article{
+				Slug:           res[i].Slug,
+				Title:          res[i].Title,
+				Description:    res[i].Description,
+				Body:           res[i].Body,
+				TagList:        res[i].Tags,
+				CreatedAt:      res[i].CreatedAt,
+				UpdatedAt:      res[i].UpdatedAt,
+				Favorited:      favorited,
+				FavoritesCount: len(res[i].Favorites),
+				Author: Author{
+					Username:  user.Username,
+					Bio:       user.Bio,
+					Image:     user.Image,
+					Following: following,
+				},
+			}
+		}
 
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -694,7 +814,65 @@ func (h *handler) handleFeedArticles() http.HandlerFunc {
 		}
 
 		articles := make([]Article, len(res))
-		// TODO: fill articles
+
+		for i := range res {
+			favorited := false
+			if currentUser != nil {
+				if f, ok := res[i].Favorites[currentUser.ID]; f && ok {
+					favorited = true
+				}
+			}
+
+			user, err := h.userRepo.GetByID(res[i].AuthorID)
+			if err != nil {
+				if errors.As(err, &models.UserByIDNotFoundError{}) {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					w.WriteHeader(http.StatusNotFound)
+					_ = json.NewEncoder(w).Encode(ErrorResponse{
+						Errors: map[string]interface{}{
+							"message": "user not found",
+							"error":   err.Error(),
+						},
+					})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(ErrorResponse{
+					Errors: map[string]interface{}{
+						"message": "get user by id failed",
+						"error":   err.Error(),
+					},
+				})
+				return
+			}
+
+			following := false
+			if currentUser != nil {
+				if f, ok := user.Followers[currentUser.ID]; f && ok {
+					following = true
+				}
+			}
+
+			articles[i] = Article{
+				Slug:           res[i].Slug,
+				Title:          res[i].Title,
+				Description:    res[i].Description,
+				Body:           res[i].Body,
+				TagList:        res[i].Tags,
+				CreatedAt:      res[i].CreatedAt,
+				UpdatedAt:      res[i].UpdatedAt,
+				Favorited:      favorited,
+				FavoritesCount: len(res[i].Favorites),
+				Author: Author{
+					Username:  user.Username,
+					Bio:       user.Bio,
+					Image:     user.Image,
+					Following: following,
+				},
+			}
+		}
 
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -710,6 +888,12 @@ func (h *handler) handleGetArticle() http.HandlerFunc {
 	type Response SingleArticleResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// get current user if exists
+		var currentUser *models.User
+		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+			currentUser = iCurrentUser.(*models.User)
+		}
+
 		// get params
 		slug := r.Context().Value("slug").(string)
 
@@ -765,6 +949,20 @@ func (h *handler) handleGetArticle() http.HandlerFunc {
 			return
 		}
 
+		favorited := false
+		if currentUser != nil {
+			if f, ok := article.Favorites[currentUser.ID]; f && ok {
+				favorited = true
+			}
+		}
+
+		following := false
+		if currentUser != nil {
+			if f, ok := user.Followers[currentUser.ID]; f && ok {
+				following = true
+			}
+		}
+
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -777,13 +975,13 @@ func (h *handler) handleGetArticle() http.HandlerFunc {
 				TagList:        article.Tags,
 				CreatedAt:      article.CreatedAt,
 				UpdatedAt:      article.UpdatedAt,
-				Favorited:      false, // TODO
+				Favorited:      favorited,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
 					Username:  user.Username,
 					Bio:       user.Bio,
 					Image:     user.Image,
-					Following: false, // TODO
+					Following: following,
 				},
 			},
 		})
@@ -832,7 +1030,7 @@ func (h *handler) handleCreateArticle() http.HandlerFunc {
 			Comments:    make([]models.Comment, 0),
 		}
 
-		err = h.articleRepo.Create(article)
+		err = h.articleRepo.Add(article)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -966,6 +1164,18 @@ func (h *handler) handleUpdateArticle() http.HandlerFunc {
 			return
 		}
 
+		favorited := false
+		if currentUser != nil {
+			if f, ok := article.Favorites[currentUser.ID]; f && ok {
+				favorited = true
+			}
+		}
+
+		following := false
+		if f, ok := currentUser.Followers[currentUser.ID]; f && ok {
+			following = true
+		}
+
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -978,13 +1188,13 @@ func (h *handler) handleUpdateArticle() http.HandlerFunc {
 				TagList:        article.Tags,
 				CreatedAt:      article.CreatedAt,
 				UpdatedAt:      article.UpdatedAt,
-				Favorited:      false, // TODO
+				Favorited:      favorited,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
 					Username:  currentUser.Username,
 					Bio:       currentUser.Bio,
 					Image:     currentUser.Image,
-					Following: false, // TODO
+					Following: following,
 				},
 			},
 		})
@@ -1135,6 +1345,11 @@ func (h *handler) handleAddCommentsToAnArticle() http.HandlerFunc {
 			return
 		}
 
+		following := false
+		if f, ok := currentUser.Followers[currentUser.ID]; f && ok {
+			following = true
+		}
+
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusCreated)
@@ -1148,7 +1363,7 @@ func (h *handler) handleAddCommentsToAnArticle() http.HandlerFunc {
 					Username:  currentUser.Username,
 					Bio:       currentUser.Bio,
 					Image:     currentUser.Image,
-					Following: false, // TODO
+					Following: following,
 				},
 			},
 		})
@@ -1159,6 +1374,12 @@ func (h *handler) handleGetCommentsFromAnArticle() http.HandlerFunc {
 	type Response MultipleCommentsResponse
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// get current user if exists
+		var currentUser *models.User
+		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+			currentUser = iCurrentUser.(*models.User)
+		}
+
 		// get params
 		slug := r.Context().Value("slug").(string)
 
@@ -1192,8 +1413,34 @@ func (h *handler) handleGetCommentsFromAnArticle() http.HandlerFunc {
 		for i := range article.Comments {
 			author, err := h.userRepo.GetByID(article.Comments[i].AuthorID)
 			if err != nil {
-				// TODO
+				if errors.As(err, &models.UserByIDNotFoundError{}) {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					w.WriteHeader(http.StatusInternalServerError)
+					_ = json.NewEncoder(w).Encode(ErrorResponse{
+						Errors: map[string]interface{}{
+							"message": "author of comment not found",
+							"error":   err.Error(),
+						},
+					})
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(ErrorResponse{
+					Errors: map[string]interface{}{
+						"message": "get author of comment failed",
+						"error":   err.Error(),
+					},
+				})
 				return
+			}
+
+			following := false
+			if currentUser != nil {
+				if f, ok := author.Followers[currentUser.ID]; f && ok {
+					following = true
+				}
 			}
 
 			comments[i] = Comment{
@@ -1205,7 +1452,7 @@ func (h *handler) handleGetCommentsFromAnArticle() http.HandlerFunc {
 					Username:  author.Username,
 					Bio:       author.Bio,
 					Image:     author.Image,
-					Following: false, // Todo
+					Following: following,
 				},
 			}
 		}
@@ -1368,6 +1615,46 @@ func (h *handler) handleFavoriteArticle() http.HandlerFunc {
 			return
 		}
 
+		// find user by id
+		user, err := h.userRepo.GetByID(article.AuthorID)
+		if err != nil {
+			if errors.As(err, &models.UserByIDNotFoundError{}) {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(ErrorResponse{
+					Errors: map[string]interface{}{
+						"message": "author of article not found",
+						"error":   err.Error(),
+					},
+				})
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(ErrorResponse{
+				Errors: map[string]interface{}{
+					"message": "get author of article failed",
+					"error":   err.Error(),
+				},
+			})
+			return
+		}
+
+		favorited := false
+		if currentUser != nil {
+			if f, ok := article.Favorites[currentUser.ID]; f && ok {
+				favorited = true
+			}
+		}
+
+		following := false
+		if currentUser != nil {
+			if f, ok := user.Followers[currentUser.ID]; f && ok {
+				following = true
+			}
+		}
+
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -1380,9 +1667,14 @@ func (h *handler) handleFavoriteArticle() http.HandlerFunc {
 				TagList:        article.Tags,
 				CreatedAt:      article.CreatedAt,
 				UpdatedAt:      article.UpdatedAt,
-				Favorited:      false,    // TODO
-				FavoritesCount: 0,        // TODO
-				Author:         Author{}, // TODO
+				Favorited:      favorited,
+				FavoritesCount: len(article.Favorites),
+				Author: Author{
+					Username:  user.Username,
+					Bio:       user.Bio,
+					Image:     user.Image,
+					Following: following,
+				},
 			},
 		})
 	}
@@ -1440,8 +1732,68 @@ func (h *handler) handleUnfavoriteArticle() http.HandlerFunc {
 			return
 		}
 
+		// find user by id
+		user, err := h.userRepo.GetByID(article.AuthorID)
+		if err != nil {
+			if errors.As(err, &models.UserByIDNotFoundError{}) {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(ErrorResponse{
+					Errors: map[string]interface{}{
+						"message": "author of article not found",
+						"error":   err.Error(),
+					},
+				})
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(ErrorResponse{
+				Errors: map[string]interface{}{
+					"message": "get author of article failed",
+					"error":   err.Error(),
+				},
+			})
+			return
+		}
+
+		favorited := false
+		if currentUser != nil {
+			if f, ok := article.Favorites[currentUser.ID]; f && ok {
+				favorited = true
+			}
+		}
+
+		following := false
+		if currentUser != nil {
+			if f, ok := user.Followers[currentUser.ID]; f && ok {
+				following = true
+			}
+		}
+
 		// success response
-		w.WriteHeader(http.StatusNoContent)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(Response{
+			Article: Article{
+				Slug:           article.Slug,
+				Title:          article.Title,
+				Description:    article.Description,
+				Body:           article.Body,
+				TagList:        article.Tags,
+				CreatedAt:      article.CreatedAt,
+				UpdatedAt:      article.UpdatedAt,
+				Favorited:      favorited,
+				FavoritesCount: len(article.Favorites),
+				Author: Author{
+					Username:  user.Username,
+					Bio:       user.Bio,
+					Image:     user.Image,
+					Following: following,
+				},
+			},
+		})
 	}
 }
 

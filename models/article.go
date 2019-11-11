@@ -29,8 +29,8 @@ type Comment struct {
 type ArticleRepository interface {
 	List(offset, limit int, filters ...ArticleFilter) (res []Article, total int, err error)
 	GetBySlug(slug string) (res *Article, err error)
-	Create(article Article) (err error)
-	UpdateBySlug(slug string, article Article) (err error)
+	Add(entity Article) (err error)
+	UpdateBySlug(slug string, entity Article) (err error)
 	DeleteBySlug(slug string) (err error)
 	NewCommentID() (id int)
 	GetTags() (res []string, err error)
