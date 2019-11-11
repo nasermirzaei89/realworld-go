@@ -29,7 +29,7 @@ func (repo *userRepo) GetByEmail(email string) (*models.User, error) {
 		}
 	}
 
-	return nil, &models.UserByEmailNotFoundError{Email: email}
+	return nil, models.UserByEmailNotFoundError{Email: email}
 }
 
 func (repo *userRepo) GetByUsername(username string) (*models.User, error) {
@@ -39,7 +39,7 @@ func (repo *userRepo) GetByUsername(username string) (*models.User, error) {
 		}
 	}
 
-	return nil, &models.UserByUsernameNotFoundError{Username: username}
+	return nil, models.UserByUsernameNotFoundError{Username: username}
 }
 
 func (repo *userRepo) GetByID(id int) (*models.User, error) {
@@ -49,7 +49,7 @@ func (repo *userRepo) GetByID(id int) (*models.User, error) {
 		}
 	}
 
-	return nil, &models.UserByIDNotFoundError{ID: id}
+	return nil, models.UserByIDNotFoundError{ID: id}
 }
 
 func (repo *userRepo) Add(entity models.User) error {
@@ -95,7 +95,7 @@ func (repo *userRepo) UpdateByID(id int, entity models.User) error {
 	}
 
 	if index == -1 {
-		return &models.UserByIDNotFoundError{ID: id}
+		return models.UserByIDNotFoundError{ID: id}
 	}
 
 	repo.users[index] = entity

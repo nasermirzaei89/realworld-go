@@ -18,7 +18,7 @@ func NewArticleRepository() models.ArticleRepository {
 }
 
 func (repo *articleRepo) List(offset, limit int, filters ...models.ArticleFilter) ([]models.Article, int, error) {
-	var res []models.Article
+	res := make([]models.Article, len(repo.articles))
 	copy(res, repo.articles)
 	for _, filter := range filters {
 		res = filter(res)

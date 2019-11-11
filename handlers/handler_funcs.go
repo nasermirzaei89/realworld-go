@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	uniqueID "github.com/nasermirzaei89/realworld-go/libs/id"
 	"github.com/nasermirzaei89/realworld-go/libs/jwt"
+	slugify "github.com/nasermirzaei89/realworld-go/libs/slug"
 	"github.com/nasermirzaei89/realworld-go/models"
 	"net/http"
 	"strconv"
@@ -22,8 +24,10 @@ func (h *handler) handleCORS() http.HandlerFunc {
 
 func (h *handler) handleAuthentication() http.HandlerFunc {
 	type Request struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		User struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		} `json:"user"`
 	}
 
 	type Response UserResponse
@@ -44,7 +48,7 @@ func (h *handler) handleAuthentication() http.HandlerFunc {
 		}
 
 		// find user by email
-		user, err := h.userRepo.GetByEmail(req.Email)
+		user, err := h.userRepo.GetByEmail(req.User.Email)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusUnauthorized)
@@ -59,7 +63,7 @@ func (h *handler) handleAuthentication() http.HandlerFunc {
 
 		// check password
 		// TODO: should hash password
-		if req.Password != user.Password {
+		if req.User.Password != user.Password {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusUnauthorized)
 			_ = json.NewEncoder(w).Encode(ErrorResponse{
@@ -87,9 +91,11 @@ func (h *handler) handleAuthentication() http.HandlerFunc {
 
 func (h *handler) handleRegistration() http.HandlerFunc {
 	type Request struct {
-		Email    string `json:"email"`
-		Username string `json:"username"`
-		Password string `json:"password"`
+		User struct {
+			Email    string `json:"email"`
+			Username string `json:"username"`
+			Password string `json:"password"`
+		} `json:"user"`
 	}
 
 	type Response UserResponse
@@ -109,10 +115,8 @@ func (h *handler) handleRegistration() http.HandlerFunc {
 			return
 		}
 
-		// TODO: validate email
-
 		// find user by email
-		_, err = h.userRepo.GetByEmail(req.Email)
+		_, err = h.userRepo.GetByEmail(req.User.Email)
 		if err != nil && !errors.As(err, &models.UserByEmailNotFoundError{}) {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusUnauthorized)
@@ -137,7 +141,7 @@ func (h *handler) handleRegistration() http.HandlerFunc {
 		}
 
 		// find user by username
-		_, err = h.userRepo.GetByUsername(req.Username)
+		_, err = h.userRepo.GetByUsername(req.User.Username)
 		if err != nil && !errors.As(err, &models.UserByUsernameNotFoundError{}) {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusUnauthorized)
@@ -181,10 +185,10 @@ func (h *handler) handleRegistration() http.HandlerFunc {
 		// create user
 		user := models.User{
 			ID:        userID,
-			Email:     req.Email,
+			Email:     req.User.Email, // TODO: validate email
 			Token:     tokenStr,
-			Username:  req.Username,
-			Password:  req.Password, // TODO: should hash password
+			Username:  req.User.Username,
+			Password:  req.User.Password, // TODO: should hash password
 			Bio:       "",
 			Image:     "",
 			Followers: map[int]bool{},
@@ -226,6 +230,8 @@ func (h *handler) handleGetCurrentUser() http.HandlerFunc {
 		currentUser := r.Context().Value("current_user").(*models.User)
 
 		// success response
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(Response{
 			User: User{
 				Email:    currentUser.Email,
@@ -240,11 +246,13 @@ func (h *handler) handleGetCurrentUser() http.HandlerFunc {
 
 func (h *handler) handleUpdateUser() http.HandlerFunc {
 	type Request struct {
-		Email    *string `json:"email"`
-		Username *string `json:"username"`
-		Password *string `json:"password"`
-		Image    *string `json:"image"`
-		Bio      *string `json:"bio"`
+		User struct {
+			Email    *string `json:"email"`
+			Username *string `json:"username"`
+			Password *string `json:"password"`
+			Image    *string `json:"image"`
+			Bio      *string `json:"bio"`
+		} `json:"user"`
 	}
 
 	type Response UserResponse
@@ -267,9 +275,9 @@ func (h *handler) handleUpdateUser() http.HandlerFunc {
 			return
 		}
 
-		if req.Email != nil {
+		if req.User.Email != nil {
 			// check email
-			exists, err := h.userRepo.GetByEmail(*req.Email)
+			exists, err := h.userRepo.GetByEmail(*req.User.Email)
 			if err != nil && !errors.As(err, &models.UserByEmailNotFoundError{}) {
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 				w.WriteHeader(http.StatusUnauthorized)
@@ -293,12 +301,13 @@ func (h *handler) handleUpdateUser() http.HandlerFunc {
 				return
 			}
 
-			currentUser.Email = *req.Email
+			// TODO: validate email
+			currentUser.Email = *req.User.Email
 		}
 
-		if req.Username != nil {
+		if req.User.Username != nil {
 			// check username
-			exists, err := h.userRepo.GetByUsername(*req.Username)
+			exists, err := h.userRepo.GetByUsername(*req.User.Username)
 			if err != nil && !errors.As(err, &models.UserByUsernameNotFoundError{}) {
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 				w.WriteHeader(http.StatusUnauthorized)
@@ -322,19 +331,19 @@ func (h *handler) handleUpdateUser() http.HandlerFunc {
 				return
 			}
 
-			currentUser.Username = *req.Username
+			currentUser.Username = *req.User.Username
 		}
 
-		if req.Password != nil {
-			currentUser.Password = *req.Password
+		if req.User.Password != nil {
+			currentUser.Password = *req.User.Password
 		}
 
-		if req.Image != nil {
-			currentUser.Image = *req.Image
+		if req.User.Image != nil {
+			currentUser.Image = *req.User.Image
 		}
 
-		if req.Bio != nil {
-			currentUser.Bio = *req.Bio
+		if req.User.Bio != nil {
+			currentUser.Bio = *req.User.Bio
 		}
 
 		// update user
@@ -352,7 +361,17 @@ func (h *handler) handleUpdateUser() http.HandlerFunc {
 		}
 
 		// success response
-		w.WriteHeader(http.StatusNoContent)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(Response{
+			User: User{
+				Email:    currentUser.Email,
+				Token:    currentUser.Token,
+				Username: currentUser.Username,
+				Bio:      currentUser.Bio,
+				Image:    currentUser.Image,
+			},
+		})
 	}
 }
 
@@ -566,52 +585,36 @@ func (h *handler) handleListArticles() http.HandlerFunc {
 					user, err := h.userRepo.GetByUsername(v)
 					if err != nil {
 						if errors.As(err, &models.UserByUsernameNotFoundError{}) {
+							user = &models.User{Username: v}
+						} else {
 							w.Header().Set("Content-Type", "application/json; charset=utf-8")
-							w.WriteHeader(http.StatusNotFound)
+							w.WriteHeader(http.StatusInternalServerError)
 							_ = json.NewEncoder(w).Encode(ErrorResponse{
 								Errors: map[string]interface{}{
-									"message": "user not found",
+									"message": "get user by username failed",
 									"error":   err.Error(),
 								},
 							})
 							return
 						}
-
-						w.Header().Set("Content-Type", "application/json; charset=utf-8")
-						w.WriteHeader(http.StatusInternalServerError)
-						_ = json.NewEncoder(w).Encode(ErrorResponse{
-							Errors: map[string]interface{}{
-								"message": "get user by username failed",
-								"error":   err.Error(),
-							},
-						})
-						return
 					}
 					filters = append(filters, models.FilterArticlesByAuthor(*user))
 				case "favorited":
 					user, err := h.userRepo.GetByUsername(v)
 					if err != nil {
 						if errors.As(err, &models.UserByUsernameNotFoundError{}) {
+							user = &models.User{Username: v}
+						} else {
 							w.Header().Set("Content-Type", "application/json; charset=utf-8")
-							w.WriteHeader(http.StatusNotFound)
+							w.WriteHeader(http.StatusInternalServerError)
 							_ = json.NewEncoder(w).Encode(ErrorResponse{
 								Errors: map[string]interface{}{
-									"message": "user not found",
+									"message": "get user by username failed",
 									"error":   err.Error(),
 								},
 							})
 							return
 						}
-
-						w.Header().Set("Content-Type", "application/json; charset=utf-8")
-						w.WriteHeader(http.StatusInternalServerError)
-						_ = json.NewEncoder(w).Encode(ErrorResponse{
-							Errors: map[string]interface{}{
-								"message": "get user by username failed",
-								"error":   err.Error(),
-							},
-						})
-						return
 					}
 					filters = append(filters, models.FilterArticlesByFavorite(*user))
 				case "offset":
@@ -990,10 +993,12 @@ func (h *handler) handleGetArticle() http.HandlerFunc {
 
 func (h *handler) handleCreateArticle() http.HandlerFunc {
 	type Request struct {
-		Title       string   `json:"title"`
-		Description string   `json:"description"`
-		Body        string   `json:"body"`
-		TagList     []string `json:"tagList"`
+		Article struct {
+			Title       string   `json:"title"`
+			Description string   `json:"description"`
+			Body        string   `json:"body"`
+			TagList     []string `json:"tagList"`
+		} `json:"article"`
 	}
 
 	type Response SingleArticleResponse
@@ -1018,11 +1023,11 @@ func (h *handler) handleCreateArticle() http.HandlerFunc {
 
 		// create article
 		article := models.Article{
-			Slug:        "", // TODO: fill slug
-			Title:       req.Title,
-			Description: req.Description,
-			Body:        req.Body,
-			Tags:        req.TagList,
+			Slug:        fmt.Sprintf("%s-%s", slugify.Make(req.Article.Title), uniqueID.New(6)),
+			Title:       req.Article.Title,
+			Description: req.Article.Description,
+			Body:        req.Article.Body,
+			Tags:        append([]string{}, req.Article.TagList...),
 			CreatedAt:   time.Now(),
 			UpdatedAt:   time.Now(),
 			AuthorID:    currentUser.ID,
@@ -1070,9 +1075,11 @@ func (h *handler) handleCreateArticle() http.HandlerFunc {
 
 func (h *handler) handleUpdateArticle() http.HandlerFunc {
 	type Request struct {
-		Title       *string `json:"title"`
-		Description *string `json:"description"`
-		Body        *string `json:"body"`
+		Article struct {
+			Title       *string `json:"title"`
+			Description *string `json:"description"`
+			Body        *string `json:"body"`
+		} `json:"article"`
 	}
 
 	type Response SingleArticleResponse
@@ -1137,17 +1144,17 @@ func (h *handler) handleUpdateArticle() http.HandlerFunc {
 		}
 
 		// update fields
-		if req.Title != nil {
-			article.Title = *req.Title
-			article.Slug = "" // TODO
+		if req.Article.Title != nil {
+			article.Title = *req.Article.Title
+			article.Slug = fmt.Sprintf("%s-%s", slugify.Make(*req.Article.Title), uniqueID.New(6))
 		}
 
-		if req.Description != nil {
-			article.Description = *req.Description
+		if req.Article.Description != nil {
+			article.Description = *req.Article.Description
 		}
 
-		if req.Body != nil {
-			article.Body = *req.Body
+		if req.Article.Body != nil {
+			article.Body = *req.Article.Body
 		}
 
 		// update article
@@ -1268,7 +1275,9 @@ func (h *handler) handleDeleteArticle() http.HandlerFunc {
 
 func (h *handler) handleAddCommentsToAnArticle() http.HandlerFunc {
 	type Request struct {
-		Body string `json:"body"`
+		Comment struct {
+			Body string `json:"body"`
+		} `json:"comment"`
 	}
 
 	type Response SingleCommentResponse
@@ -1325,7 +1334,7 @@ func (h *handler) handleAddCommentsToAnArticle() http.HandlerFunc {
 			ID:        h.articleRepo.NewCommentID(),
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
-			Body:      req.Body,
+			Body:      req.Comment.Body,
 			AuthorID:  currentUser.ID,
 		}
 
@@ -1528,7 +1537,7 @@ func (h *handler) handleDeleteComment() http.HandlerFunc {
 					return
 				}
 
-				article.Comments = append(article.Comments[:i], article.Comments[:i+1]...)
+				article.Comments = append(article.Comments[:i], article.Comments[i+1:]...)
 				deleted = true
 				break
 			}

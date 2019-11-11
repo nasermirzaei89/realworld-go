@@ -50,6 +50,14 @@ type token struct {
 	payload Payload
 }
 
+func (t *token) GetHeader() Header {
+	return t.header
+}
+
+func (t *token) GetPayload() Payload {
+	return t.payload
+}
+
 func (t *token) SetSubject(sub string) {
 	t.payload[ClaimSubject] = sub
 }

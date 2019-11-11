@@ -135,7 +135,7 @@ func (h *handler) middlewareAuthentication(next http.HandlerFunc, force bool) ht
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "user", user))
+		r = r.WithContext(context.WithValue(r.Context(), "current_user", user))
 		next(w, r)
 	}
 }

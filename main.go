@@ -37,5 +37,5 @@ func addr() string {
 		return env
 	}
 
-	return "http://localhost:3000/api"
+	return "localhost:3000"
 }
