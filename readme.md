@@ -2,9 +2,14 @@
 
 > ### pure go codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
+[![Build Status](https://travis-ci.org/nasermirzaei89/realworld-go.svg?branch=master)](https://travis-ci.org/nasermirzaei89/realworld-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nasermirzaei89/realworld-go)](https://goreportcard.com/report/github.com/nasermirzaei89/realworld-go)
+[![GolangCI](https://golangci.com/badges/github.com/nasermirzaei89/realworld-go.svg)](https://golangci.com/r/github.com/nasermirzaei89/realworld-go)
+[![Codecov](https://codecov.io/gh/nasermirzaei89/realworld-go/branch/master/graph/badge.svg)](https://codecov.io/gh/nasermirzaei89/realworld-go)
+[![GoDoc](https://godoc.org/github.com/nasermirzaei89/realworld-go?status.svg)](https://godoc.org/github.com/nasermirzaei89/realworld-go)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000)](https://raw.githubusercontent.com/nasermirzaei89/realworld-go/master/LICENSE)
 
 ### [Demo](https://github.com/gothinkster/realworld)&nbsp;&nbsp;&nbsp;&nbsp;[RealWorld](https://github.com/gothinkster/realworld)
-
 
 This codebase was created to demonstrate a fully fledged fullstack application built with **pure go** including CRUD operations, authentication, routing, pagination, and more.
 
