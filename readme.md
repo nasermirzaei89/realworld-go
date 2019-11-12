@@ -19,5 +19,22 @@ For more information on how to this works with other frontends/backends, head ov
 
 # Getting started
 
-> npm install, npm start, etc.
+## Run:
 
+```bash
+make run
+```
+
+## Test:
+
+You should be in [this](https://github.com/gothinkster/realworld/tree/master/api) path
+
+```bash
+export APIURL=http://localhost:8080
+./run-api-tests.sh
+```
+
+## Environments
+
+1. `JWT_SECRET` with default value `secret` for sign jwt token with `HS256` algorithm
+1. `API_ADDRESS` with default value `0.0.0.0:8080` for host and port of the API

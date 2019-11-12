@@ -25,7 +25,7 @@ func main() {
 }
 
 func secret() []byte {
-	if env, ok := os.LookupEnv("SECRET"); ok {
+	if env, ok := os.LookupEnv("JWT_SECRET"); ok {
 		return []byte(env)
 	}
 
@@ -33,9 +33,9 @@ func secret() []byte {
 }
 
 func addr() string {
-	if env, ok := os.LookupEnv("APIURL"); ok {
+	if env, ok := os.LookupEnv("API_ADDRESS"); ok {
 		return env
 	}
 
-	return "localhost:3000"
+	return "0.0.0.0:8080"
 }

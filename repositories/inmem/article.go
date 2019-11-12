@@ -97,7 +97,7 @@ func (repo *articleRepo) NewCommentID() int {
 }
 
 func (repo *articleRepo) GetTags() ([]string, error) {
-	var res []string
+	res := make([]string, 0)
 	keys := make(map[string]bool)
 	for _, article := range repo.articles {
 		for _, tag := range article.Tags {
