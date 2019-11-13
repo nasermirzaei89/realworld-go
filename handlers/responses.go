@@ -1,6 +1,6 @@
 package handlers
 
-import "time"
+const dateLayout = "2006-01-02T15:04:05.999Z"
 
 type User struct {
 	Email    string `json:"email"`
@@ -33,16 +33,16 @@ type Author struct {
 }
 
 type Article struct {
-	Slug           string    `json:"slug"`
-	Title          string    `json:"title"`
-	Description    string    `json:"description"`
-	Body           string    `json:"body"`
-	TagList        []string  `json:"tagList"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	Favorited      bool      `json:"favorited"`
-	FavoritesCount int       `json:"favoritesCount"`
-	Author         Author    `json:"author"`
+	Slug           string   `json:"slug"`
+	Title          string   `json:"title"`
+	Description    string   `json:"description"`
+	Body           string   `json:"body"`
+	TagList        []string `json:"tagList"`
+	CreatedAt      string   `json:"createdAt"`
+	UpdatedAt      string   `json:"updatedAt"`
+	Favorited      bool     `json:"favorited"`
+	FavoritesCount int      `json:"favoritesCount"`
+	Author         Author   `json:"author"`
 }
 
 type SingleArticleResponse struct {
@@ -55,11 +55,11 @@ type MultipleArticlesResponse struct {
 }
 
 type Comment struct {
-	ID        int       `json:"id"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Body      string    `json:"body"`
-	Author    Author    `json:"author"`
+	ID        int    `json:"id"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+	Body      string `json:"body"`
+	Author    Author `json:"author"`
 }
 
 type SingleCommentResponse struct {

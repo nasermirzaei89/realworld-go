@@ -712,8 +712,8 @@ func (h *handler) handleListArticles() http.HandlerFunc {
 				Description:    res[i].Description,
 				Body:           res[i].Body,
 				TagList:        res[i].Tags,
-				CreatedAt:      res[i].CreatedAt,
-				UpdatedAt:      res[i].UpdatedAt,
+				CreatedAt:      res[i].CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      res[i].UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      favorited,
 				FavoritesCount: len(res[i].Favorites),
 				Author: Author{
@@ -864,8 +864,8 @@ func (h *handler) handleFeedArticles() http.HandlerFunc {
 				Description:    res[i].Description,
 				Body:           res[i].Body,
 				TagList:        res[i].Tags,
-				CreatedAt:      res[i].CreatedAt,
-				UpdatedAt:      res[i].UpdatedAt,
+				CreatedAt:      res[i].CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      res[i].UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      favorited,
 				FavoritesCount: len(res[i].Favorites),
 				Author: Author{
@@ -976,8 +976,8 @@ func (h *handler) handleGetArticle() http.HandlerFunc {
 				Description:    article.Description,
 				Body:           article.Body,
 				TagList:        article.Tags,
-				CreatedAt:      article.CreatedAt,
-				UpdatedAt:      article.UpdatedAt,
+				CreatedAt:      article.CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      article.UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      favorited,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
@@ -1058,8 +1058,8 @@ func (h *handler) handleCreateArticle() http.HandlerFunc {
 				Description:    article.Description,
 				Body:           article.Body,
 				TagList:        article.Tags,
-				CreatedAt:      article.CreatedAt,
-				UpdatedAt:      article.UpdatedAt,
+				CreatedAt:      article.CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      article.UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      false,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
@@ -1193,8 +1193,8 @@ func (h *handler) handleUpdateArticle() http.HandlerFunc {
 				Description:    article.Description,
 				Body:           article.Body,
 				TagList:        article.Tags,
-				CreatedAt:      article.CreatedAt,
-				UpdatedAt:      article.UpdatedAt,
+				CreatedAt:      article.CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      article.UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      favorited,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
@@ -1365,8 +1365,8 @@ func (h *handler) handleAddCommentsToAnArticle() http.HandlerFunc {
 		_ = json.NewEncoder(w).Encode(Response{
 			Comment: Comment{
 				ID:        comment.ID,
-				CreatedAt: comment.CreatedAt,
-				UpdatedAt: comment.UpdatedAt,
+				CreatedAt: comment.CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt: comment.UpdatedAt.UTC().Format(dateLayout),
 				Body:      comment.Body,
 				Author: Author{
 					Username:  currentUser.Username,
@@ -1454,8 +1454,8 @@ func (h *handler) handleGetCommentsFromAnArticle() http.HandlerFunc {
 
 			comments[i] = Comment{
 				ID:        article.Comments[i].ID,
-				CreatedAt: article.Comments[i].CreatedAt,
-				UpdatedAt: article.Comments[i].UpdatedAt,
+				CreatedAt: article.Comments[i].CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt: article.Comments[i].UpdatedAt.UTC().Format(dateLayout),
 				Body:      article.Comments[i].Body,
 				Author: Author{
 					Username:  author.Username,
@@ -1674,8 +1674,8 @@ func (h *handler) handleFavoriteArticle() http.HandlerFunc {
 				Description:    article.Description,
 				Body:           article.Body,
 				TagList:        article.Tags,
-				CreatedAt:      article.CreatedAt,
-				UpdatedAt:      article.UpdatedAt,
+				CreatedAt:      article.CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      article.UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      favorited,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
@@ -1791,8 +1791,8 @@ func (h *handler) handleUnfavoriteArticle() http.HandlerFunc {
 				Description:    article.Description,
 				Body:           article.Body,
 				TagList:        article.Tags,
-				CreatedAt:      article.CreatedAt,
-				UpdatedAt:      article.UpdatedAt,
+				CreatedAt:      article.CreatedAt.UTC().Format(dateLayout),
+				UpdatedAt:      article.UpdatedAt.UTC().Format(dateLayout),
 				Favorited:      favorited,
 				FavoritesCount: len(article.Favorites),
 				Author: Author{
