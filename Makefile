@@ -10,10 +10,10 @@ format:
 	gofmt -s -w $(ROOT)
 
 build:
-	go build -o $(BIN_NAME) -ldflags="-s -w" $(ROOT)/*.go
+	go build -o $(ROOT)/bin/$(BIN_NAME) -ldflags="-s -w" $(ROOT)/cmd/realworld/*.go
 
 run:
-	go run $(ROOT)/*.go
+	go run $(ROOT)/cmd/realworld/*.go
 
 test:
 	CGO_ENABLED=1 go test -race -coverprofile=coverage.txt -covermode=atomic $(ROOT)/...

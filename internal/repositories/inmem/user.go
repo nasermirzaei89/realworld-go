@@ -2,7 +2,7 @@ package inmem
 
 import (
 	"fmt"
-	"github.com/nasermirzaei89/realworld-go/models"
+	"github.com/nasermirzaei89/realworld-go/internal/models"
 )
 
 type userRepo struct {

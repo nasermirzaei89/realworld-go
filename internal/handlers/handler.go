@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"github.com/nasermirzaei89/realworld-go/models"
+	"github.com/nasermirzaei89/realworld-go/internal/models"
 	"net/http"
 	"regexp"
 )

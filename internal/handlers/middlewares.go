@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"github.com/nasermirzaei89/realworld-go/libs/jwt"
+	"github.com/nasermirzaei89/realworld-go/pkg/jwt"
 	"net/http"
 	"strconv"
 	"strings"

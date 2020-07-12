@@ -1,7 +1,7 @@
 package id_test
 
 import (
-	"github.com/nasermirzaei89/realworld-go/libs/id"
+	"github.com/nasermirzaei89/realworld-go/pkg/id"
 	"testing"
 )
 

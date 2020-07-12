@@ -1,7 +1,7 @@
 package slug_test
 
 import (
-	"github.com/nasermirzaei89/realworld-go/libs/slug"
+	"github.com/nasermirzaei89/realworld-go/pkg/slug"
 	"testing"
 )
 

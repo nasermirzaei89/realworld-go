@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/nasermirzaei89/realworld-go/handlers"
-	"github.com/nasermirzaei89/realworld-go/repositories/inmem"
+	"github.com/nasermirzaei89/realworld-go/internal/handlers"
+	"github.com/nasermirzaei89/realworld-go/internal/repositories/inmem"
 	"log"
 	"net/http"
 	"os"
