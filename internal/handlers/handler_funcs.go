@@ -227,7 +227,7 @@ func (h *handler) handleGetCurrentUser() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// success response
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -259,7 +259,7 @@ func (h *handler) handleUpdateUser() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get request body
 		var req Request
@@ -381,7 +381,7 @@ func (h *handler) handleGetProfile() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user if exists
 		var currentUser *models.User
-		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+		if iCurrentUser := r.Context().Value(currentUserCtx); iCurrentUser != nil {
 			currentUser = iCurrentUser.(*models.User)
 		}
 
@@ -437,7 +437,7 @@ func (h *handler) handleFollowUser() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get user by username
 		user, err := h.userRepo.GetByUsername(r.Context().Value("username").(string))
@@ -500,7 +500,7 @@ func (h *handler) handleUnfollowUser() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get user by username
 		user, err := h.userRepo.GetByUsername(r.Context().Value("username").(string))
@@ -564,7 +564,7 @@ func (h *handler) handleListArticles() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user if exists
 		var currentUser *models.User
-		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+		if iCurrentUser := r.Context().Value(currentUserCtx); iCurrentUser != nil {
 			currentUser = iCurrentUser.(*models.User)
 		}
 
@@ -740,7 +740,7 @@ func (h *handler) handleFeedArticles() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		query := r.URL.Query()
 
@@ -893,7 +893,7 @@ func (h *handler) handleGetArticle() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user if exists
 		var currentUser *models.User
-		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+		if iCurrentUser := r.Context().Value(currentUserCtx); iCurrentUser != nil {
 			currentUser = iCurrentUser.(*models.User)
 		}
 
@@ -1005,7 +1005,7 @@ func (h *handler) handleCreateArticle() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get request body
 		var req Request
@@ -1086,7 +1086,7 @@ func (h *handler) handleUpdateArticle() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get params
 		slug := r.Context().Value("slug").(string)
@@ -1211,7 +1211,7 @@ func (h *handler) handleUpdateArticle() http.HandlerFunc {
 func (h *handler) handleDeleteArticle() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get params
 		slug := r.Context().Value("slug").(string)
@@ -1284,7 +1284,7 @@ func (h *handler) handleAddCommentsToAnArticle() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get params
 		slug := r.Context().Value("slug").(string)
@@ -1385,7 +1385,7 @@ func (h *handler) handleGetCommentsFromAnArticle() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user if exists
 		var currentUser *models.User
-		if iCurrentUser := r.Context().Value("current_user"); iCurrentUser != nil {
+		if iCurrentUser := r.Context().Value(currentUserCtx); iCurrentUser != nil {
 			currentUser = iCurrentUser.(*models.User)
 		}
 
@@ -1478,7 +1478,7 @@ func (h *handler) handleGetCommentsFromAnArticle() http.HandlerFunc {
 func (h *handler) handleDeleteComment() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get params
 		slug := r.Context().Value("slug").(string)
@@ -1577,7 +1577,7 @@ func (h *handler) handleFavoriteArticle() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get params
 		slug := r.Context().Value("slug").(string)
@@ -1694,7 +1694,7 @@ func (h *handler) handleUnfavoriteArticle() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get current user
-		currentUser := r.Context().Value("current_user").(*models.User)
+		currentUser := r.Context().Value(currentUserCtx).(*models.User)
 
 		// get params
 		slug := r.Context().Value("slug").(string)

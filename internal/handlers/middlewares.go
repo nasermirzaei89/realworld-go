@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+type contextKey string
+
+const currentUserCtx contextKey = "current_user"
+
 func (h *handler) middlewareAuthentication(next http.HandlerFunc, force bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -135,7 +139,7 @@ func (h *handler) middlewareAuthentication(next http.HandlerFunc, force bool) ht
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "current_user", user))
+		r = r.WithContext(context.WithValue(r.Context(), currentUserCtx, user))
 		next(w, r)
 	}
 }
